@@ -9,7 +9,7 @@ namespace BibliotecaAPI.Controllers
 {
     [ApiController]
     [Route("api/autores")]
-    public class AutoresController : Controller
+    public class AutoresController : ControllerBase
     {
         private readonly ApplicationDbContext context;
         public AutoresController(ApplicationDbContext context)
@@ -22,6 +22,13 @@ namespace BibliotecaAPI.Controllers
         {
            return await this.context.Autores.ToListAsync();
         }
+
+        [HttpGet("primero")]
+        public async Task<ActionResult<Autor>> GetPrimerAutor()
+        {
+            return await this.context.Autores.FirstAsync();
+        }
+
         [HttpGet("{id:int}")]
         public async Task<ActionResult<Autor>> Get(int id)
         {
@@ -31,7 +38,14 @@ namespace BibliotecaAPI.Controllers
                 return NotFound();
             }
             return autor;
-        } 
+        }
+
+        [HttpGet("{parametro1}/{paramentro2?}")] // parametro opcional
+        public ActionResult Get(string parametro1, string? paramentro2)
+        {
+            return Ok(new {parametro1,paramentro2});
+        }
+
         [HttpPost]
         public async Task<ActionResult> Post(Autor autor)
         {
