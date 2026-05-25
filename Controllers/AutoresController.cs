@@ -12,15 +12,18 @@ namespace BibliotecaAPI.Controllers
     public class AutoresController : ControllerBase
     {
         private readonly ApplicationDbContext context;
-        public AutoresController(ApplicationDbContext context)
+        public readonly ILogger<AutoresController> logger;
+        public AutoresController(ApplicationDbContext context, ILogger<AutoresController> logger)
         {
             this.context = context;
+            this.logger = logger;
         }
 
         [HttpGet]
         public async Task<IEnumerable<Autor>> Get()
         {
-           return await this.context.Autores.ToListAsync();
+            this.logger.LogInformation("Obtenido los datos de autores");
+            return await this.context.Autores.ToListAsync();
         }
 
         [HttpGet("primero")]
@@ -43,8 +46,8 @@ namespace BibliotecaAPI.Controllers
         */
         public async Task<ActionResult<Autor>> Get([FromRoute] int id, [FromQuery] bool incluirLibros)
         {
-            var autor =  await this.context.Autores.Include(x => x.libros).FirstOrDefaultAsync(x => x.Id == id);
-            if(autor is null)
+            var autor = await this.context.Autores.Include(x => x.libros).FirstOrDefaultAsync(x => x.Id == id);
+            if (autor is null)
             {
                 return NotFound();
             }
@@ -52,7 +55,7 @@ namespace BibliotecaAPI.Controllers
         }
 
         [HttpGet("{nombre:alpha}")]
-        public async Task<IEnumerable<Autor>>Get([FromRoute] string nombre)
+        public async Task<IEnumerable<Autor>> Get([FromRoute] string nombre)
         {
             return await this.context.Autores.Where(x => x.Nombre.Contains(nombre)).ToListAsync();
         }
@@ -64,18 +67,18 @@ namespace BibliotecaAPI.Controllers
         }*/
 
         [HttpPost]
-        public async Task<ActionResult> Post([FromBody]Autor autor)
+        public async Task<ActionResult> Post([FromBody] Autor autor)
         {
             this.context.Add(autor);
             await this.context.SaveChangesAsync();
             return Ok();
-            
+
         }
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put([FromRoute] int id, [FromBody]Autor autor)
+        public async Task<ActionResult> Put([FromRoute] int id, [FromBody] Autor autor)
         {
-            if(id != autor.Id)
+            if (id != autor.Id)
             {
                 return BadRequest("Los id deben de coincidir");
             }
@@ -88,7 +91,7 @@ namespace BibliotecaAPI.Controllers
         public async Task<ActionResult> Delete([FromRoute] int id)
         {
             var registrosBorrados = await this.context.Autores.Where(x => x.Id == id).ExecuteDeleteAsync();
-            if( registrosBorrados == 0)
+            if (registrosBorrados == 0)
             {
                 return NotFound();
             }

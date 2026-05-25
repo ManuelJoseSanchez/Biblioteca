@@ -4,15 +4,26 @@ namespace BibliotecaAPI
 {
     public class RepositorioValores : IRepositorioValores
     {
+        private List<Valor> _valores;
 
-        public IEnumerable<Valor> ObtenerValores()
+
+        public RepositorioValores()
         {
-            return  new List<Valor>
+            this._valores = new List<Valor>
             {
                 new Valor{Id=1, nombre="Valor 1"},
                 new Valor{Id=1, nombre="valor 2"}
             };
         }
-        
+        public IEnumerable<Valor> ObtenerValores()
+        {
+            return this._valores;
+        }
+
+        public void InsertarValor(Valor valor)
+        {
+            this._valores.Add(valor);
+        }
+
     }
 }
