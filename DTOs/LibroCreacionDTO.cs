@@ -1,15 +1,12 @@
-
 using System.ComponentModel.DataAnnotations;
 
-namespace BibliotecaAPI.Entidades
+namespace BibliotecaAPI.DTOs
 {
-    public class Libro
+    public class LibroCreacionDTO
     {
-        public int Id { get; set; }
         [Required]
         [StringLength(250,ErrorMessage ="El campo {0} solo permite {1} carateres o menos")]
         public required string Titulo {get; set;}
         public int AutorId { get; set; }
-        public Autor? autor { get; set; }
     }
 }
