@@ -6,9 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 //area de servicio
 
-builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddAutoMapper(cfg => { },typeof(Program));
+builder.Services.AddAutoMapper(cfg => { }, typeof(Program));
 
 var app = builder.Build();
 

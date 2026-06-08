@@ -32,7 +32,7 @@ namespace BibliotecaAPI.Controllers
         public async Task<ActionResult<LibroDTO>> Get(int id)
         {
             var libro = await this.Context.Libros.Include(x => x.autor).FirstOrDefaultAsync(x => x.Id == id);
-            if(libro is null)
+            if (libro is null)
             {
                 return NotFound();
             }
@@ -43,9 +43,9 @@ namespace BibliotecaAPI.Controllers
         public async Task<ActionResult> Post(LibroCreacionDTO libroCreacion)
         {
             var autor = await this.Context.Autores.AnyAsync(x => x.Id == libroCreacion.AutorId);
-            if(!autor)
+            if (!autor)
             {
-                ModelState.AddModelError(nameof(libroCreacion.AutorId),$"El autor del id {libroCreacion.AutorId} no existe");
+                ModelState.AddModelError(nameof(libroCreacion.AutorId), $"El autor del id {libroCreacion.AutorId} no existe");
                 return ValidationProblem();
             }
             var libro = this.mapper.Map<Libro>(libroCreacion);
@@ -61,24 +61,24 @@ namespace BibliotecaAPI.Controllers
             var libro = this.mapper.Map<Libro>(libroCreacionDTO);
             libro.Id = id;
             var autor = await this.Context.Autores.AnyAsync(x => x.Id == libro.AutorId);
-            if(!autor)
+            if (!autor)
             {
                 return BadRequest($"El autor de libro no exite");
             }
             this.Context.Update(libro);
             await this.Context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> Delete(int id)
         {
-            var registrosBorrados = await this.Context.Libros.Where(x => x.Id == id).ExecuteDeleteAsync() ;
+            var registrosBorrados = await this.Context.Libros.Where(x => x.Id == id).ExecuteDeleteAsync();
             if (registrosBorrados == 0)
             {
                 return NotFound();
             }
-            return Ok();
+            return NoContent();
         }
     }
 }

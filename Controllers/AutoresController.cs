@@ -1,8 +1,10 @@
 
 using AutoMapper;
+using Biblioteca.DTOs;
 using BibliotecaAPI.Datos;
 using BibliotecaAPI.DTOs;
 using BibliotecaAPI.Entidades;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,7 +65,7 @@ namespace BibliotecaAPI.Controllers
             return autorDTO;
         }
 
-      
+
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] AutorCreacionDTO autorCreacionDTO)
         {
@@ -82,7 +84,41 @@ namespace BibliotecaAPI.Controllers
             autor.Id = id;
             this.context.Update(autor);
             await this.context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
+        }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<AutorPatchDTO> patchDocument)
+        {
+            if (patchDocument is null)
+            {
+                return BadRequest();
+            }
+            var autorDB = await this.context.Autores.FirstOrDefaultAsync(x => x.Id == id);
+            if (autorDB is null)
+            {
+                return NotFound();
+            }
+            var autorPatch = this.mapper.Map<AutorPatchDTO>(autorDB);
+
+            patchDocument.ApplyTo(autorPatch, ModelState);
+
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var esValido = TryValidateModel(autorPatch);
+
+            if (!esValido)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            this.mapper.Map(autorPatch, autorDB);
+            await this.context.SaveChangesAsync();
+
+            return NoContent();
         }
 
         [HttpDelete("{id:int}")]
@@ -93,7 +129,7 @@ namespace BibliotecaAPI.Controllers
             {
                 return NotFound();
             }
-            return Ok();
+            return NoContent();
         }
     }
 }
