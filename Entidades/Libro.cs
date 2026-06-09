@@ -10,8 +10,8 @@ namespace BibliotecaAPI.Entidades
         [Required]
         [StringLength(250, ErrorMessage = "El campo {0} solo permite {1} carateres o menos")]
         public required string Titulo { get; set; }
-        public int AutorId { get; set; }
-        public Autor? autor { get; set; }
+       
+        public List<AutorLibro> Autores { get; set; } = [];
         public List<Comentario> Comentarios { get; set; } = [];
 
     }

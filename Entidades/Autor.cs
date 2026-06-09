@@ -19,8 +19,6 @@ namespace BibliotecaAPI.Entidades
 
         [StringLength(20,ErrorMessage ="El campo {0} solo permite {1} carateres o menos")]
         public string? Identificasion { get; set; }
-
-        public List<Libro> libros { get; set; } = new List<Libro>();
-
+        public List<AutorLibro> Libros { get; set; } = [];
     }
 }

@@ -56,7 +56,9 @@ namespace BibliotecaAPI.Controllers
         */
         public async Task<ActionResult<AutorConLibrosDTO>> Get([FromRoute] int id)
         {
-            var autor = await this.context.Autores.Include(x => x.libros).FirstOrDefaultAsync(x => x.Id == id);
+            var autor = await this.context.Autores.Include(x => x.Libros)
+                        .ThenInclude(x => x.Libro)
+                        .FirstOrDefaultAsync(x => x.Id == id);
             if (autor is null)
             {
                 return NotFound();

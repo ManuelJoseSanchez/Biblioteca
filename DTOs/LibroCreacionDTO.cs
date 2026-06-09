@@ -7,6 +7,6 @@ namespace BibliotecaAPI.DTOs
         [Required]
         [StringLength(250,ErrorMessage ="El campo {0} solo permite {1} carateres o menos")]
         public required string Titulo {get; set;}
-        public int AutorId { get; set; }
+        public List<int> AutoresIds { get; set; } = [];
     }
 }

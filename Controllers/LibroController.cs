@@ -29,43 +29,78 @@ namespace BibliotecaAPI.Controllers
         }
 
         [HttpGet("{id:int}", Name = "ObtenerLibro")]
-        public async Task<ActionResult<LibroDTO>> Get(int id)
+        public async Task<ActionResult<LibroConAutorDTO>> Get(int id)
         {
-            var libro = await this.Context.Libros.Include(x => x.autor).FirstOrDefaultAsync(x => x.Id == id);
+            var libro = await this.Context.Libros
+                        .Include(x => x.Autores)
+                        .ThenInclude(x => x.Autor)
+                        .FirstOrDefaultAsync(x => x.Id == id);
             if (libro is null)
             {
                 return NotFound();
             }
-            var libroDTO = this.mapper.Map<LibroDTO>(libro);
+            var libroDTO = this.mapper.Map<LibroConAutorDTO>(libro);
             return libroDTO;
         }
         [HttpPost]
         public async Task<ActionResult> Post(LibroCreacionDTO libroCreacion)
         {
-            var autor = await this.Context.Autores.AnyAsync(x => x.Id == libroCreacion.AutorId);
-            if (!autor)
+            if(libroCreacion.AutoresIds is null || libroCreacion.AutoresIds.Count == 0)
             {
-                ModelState.AddModelError(nameof(libroCreacion.AutorId), $"El autor del id {libroCreacion.AutorId} no existe");
+                ModelState.AddModelError(nameof(libroCreacion.AutoresIds), "No se puede crear un libro sin autores");
+                return ValidationProblem();
+            }
+            var autorIdsExisten = await this.Context.Autores.Where(x => libroCreacion.AutoresIds.Contains(x.Id)).Select(x => x.Id).ToListAsync();
+            if (autorIdsExisten.Count != libroCreacion.AutoresIds.Count)
+            {
+                var autorIdsNoExisten = libroCreacion.AutoresIds.Except(autorIdsExisten);
+                ModelState.AddModelError(nameof(libroCreacion.AutoresIds),
+                 $"Algunos de los autores del id {string.Join(", ", autorIdsNoExisten)} no existen");
                 return ValidationProblem();
             }
             var libro = this.mapper.Map<Libro>(libroCreacion);
+            this.AsignarOrdenAutores(libro);
             this.Context.Add(libro);
             await this.Context.SaveChangesAsync();
             var libroDTO = this.mapper.Map<LibroDTO>(libro);
             return CreatedAtRoute("ObtenerLibro", new { id = libro.Id }, libroDTO);
 
         }
+        private void AsignarOrdenAutores(Libro libro)
+        {
+            if(libro.Autores is not null)
+            {
+                for(int i = 0; i < libro.Autores.Count; i++)
+                {
+                    libro.Autores[i].Order = i;
+                }
+            }
+        }
         [HttpPut("{id:int}")]
         public async Task<ActionResult> Put(int id, LibroCreacionDTO libroCreacionDTO)
         {
-            var libro = this.mapper.Map<Libro>(libroCreacionDTO);
-            libro.Id = id;
-            var autor = await this.Context.Autores.AnyAsync(x => x.Id == libro.AutorId);
-            if (!autor)
+            if(libroCreacionDTO.AutoresIds is null || libroCreacionDTO.AutoresIds.Count == 0)
             {
-                return BadRequest($"El autor de libro no exite");
+                ModelState.AddModelError(nameof(libroCreacionDTO.AutoresIds), "No se puede crear un libro sin autores");
+                return ValidationProblem();
             }
-            this.Context.Update(libro);
+            var autorIdsExisten = await this.Context.Autores
+                    .Where(x => libroCreacionDTO.AutoresIds.Contains(x.Id))
+                    .Select(x => x.Id).ToListAsync();
+            if (autorIdsExisten.Count != libroCreacionDTO.AutoresIds.Count)
+            {
+                var autorIdsNoExisten = libroCreacionDTO.AutoresIds.Except(autorIdsExisten);
+                ModelState.AddModelError(nameof(libroCreacionDTO.AutoresIds),
+                 $"Algunos de los autores del id {string.Join(", ", autorIdsNoExisten)} no existen");
+                return ValidationProblem();
+            }
+            var libroDB = await this.Context.Libros.Include(x =>x.Autores).FirstOrDefaultAsync(x => x.Id == id);
+            if(libroDB is null)
+            {
+                return NotFound();
+            }
+            this.mapper.Map(libroCreacionDTO, libroDB);
+            this.AsignarOrdenAutores(libroDB);
             await this.Context.SaveChangesAsync();
             return NoContent();
         }

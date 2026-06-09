@@ -16,16 +16,27 @@ namespace BibliotecaAPI.Utilidades
 
             CreateMap<Autor, AutorConLibrosDTO>().ForMember(dto => dto.NombreCompleto,
             config => config.MapFrom(autor => this.MapearNombreApellidoAutor(autor)));
+
             CreateMap<AutorCreacionDTO, Autor>();
             CreateMap<Autor, AutorPatchDTO>().ReverseMap();
+            
+            CreateMap<AutorLibro, LibroDTO>()
+            .ForMember(dto => dto.Id, config => config.MapFrom(ent => ent.LibroId))
+            .ForMember(dto => dto.Titulo, config => config.MapFrom(ent => ent.Libro!.Titulo));
 
             /*DTO de libbros*/
             CreateMap<Libro, LibroDTO>();
-            CreateMap<LibroCreacionDTO, Libro>();
+            CreateMap<LibroCreacionDTO, Libro>().ForMember(ent => ent.Autores,
+            config=> config.MapFrom(dto => dto.AutoresIds.Select(id => new AutorLibro{ AutorId = id})));
 
-            CreateMap<Libro, LibroConAutorDTO>().ForMember(dto => dto.AutorNombre,
-            config => config.MapFrom(ent => this.MapearNombreApellidoAutor(ent.autor!)));
+            CreateMap<Libro, LibroConAutorDTO>();
 
+            CreateMap<AutorLibro, AutorDTO>().ForMember(dto => dto.Id, config => config.MapFrom(ent => ent.AutorId))
+            .ForMember(dto => dto.NombreCompleto, config => config.MapFrom(e => this.MapearNombreApellidoAutor(e.Autor!)));
+            
+            CreateMap<LibroCreacionDTO, AutorLibro>()
+                .ForMember(ent => ent.Libro, 
+                    config => config.MapFrom(dto => new Libro { Titulo = dto.Titulo }));
             /*DTO de comentarios*/
             CreateMap<ComentarioCreacionDTO, Comentario>();
             CreateMap<Comentario, ComentarioDTO>();
