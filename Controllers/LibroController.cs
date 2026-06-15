@@ -1,8 +1,8 @@
-
 using AutoMapper;
 using BibliotecaAPI.Datos;
 using BibliotecaAPI.DTOs;
 using BibliotecaAPI.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +10,7 @@ namespace BibliotecaAPI.Controllers
 {
     [ApiController]
     [Route("api/libros")]
+    [Authorize]
     public class LibroController : ControllerBase
     {
         private readonly ApplicationDbContext Context;
@@ -45,7 +46,7 @@ namespace BibliotecaAPI.Controllers
         [HttpPost]
         public async Task<ActionResult> Post(LibroCreacionDTO libroCreacion)
         {
-            if(libroCreacion.AutoresIds is null || libroCreacion.AutoresIds.Count == 0)
+            if (libroCreacion.AutoresIds is null || libroCreacion.AutoresIds.Count == 0)
             {
                 ModelState.AddModelError(nameof(libroCreacion.AutoresIds), "No se puede crear un libro sin autores");
                 return ValidationProblem();
@@ -68,9 +69,9 @@ namespace BibliotecaAPI.Controllers
         }
         private void AsignarOrdenAutores(Libro libro)
         {
-            if(libro.Autores is not null)
+            if (libro.Autores is not null)
             {
-                for(int i = 0; i < libro.Autores.Count; i++)
+                for (int i = 0; i < libro.Autores.Count; i++)
                 {
                     libro.Autores[i].Order = i;
                 }
@@ -79,7 +80,7 @@ namespace BibliotecaAPI.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult> Put(int id, LibroCreacionDTO libroCreacionDTO)
         {
-            if(libroCreacionDTO.AutoresIds is null || libroCreacionDTO.AutoresIds.Count == 0)
+            if (libroCreacionDTO.AutoresIds is null || libroCreacionDTO.AutoresIds.Count == 0)
             {
                 ModelState.AddModelError(nameof(libroCreacionDTO.AutoresIds), "No se puede crear un libro sin autores");
                 return ValidationProblem();
@@ -94,8 +95,8 @@ namespace BibliotecaAPI.Controllers
                  $"Algunos de los autores del id {string.Join(", ", autorIdsNoExisten)} no existen");
                 return ValidationProblem();
             }
-            var libroDB = await this.Context.Libros.Include(x =>x.Autores).FirstOrDefaultAsync(x => x.Id == id);
-            if(libroDB is null)
+            var libroDB = await this.Context.Libros.Include(x => x.Autores).FirstOrDefaultAsync(x => x.Id == id);
+            if (libroDB is null)
             {
                 return NotFound();
             }

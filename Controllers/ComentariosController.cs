@@ -1,19 +1,18 @@
-using System.ComponentModel;
-using System.Reflection.Metadata.Ecma335;
 using AutoMapper;
-using AutoMapper.Configuration.Annotations;
 using Biblioteca.DTOs;
 using Biblioteca.Entidades;
 using BibliotecaAPI.Datos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
+
 
 namespace Biblioteca.Controllers
 {
     [ApiController]
     [Route("api/libros/{librosId:int}/[controller]")]
+    [Authorize]
     public class ComentariosController : ControllerBase
     {
         private readonly ApplicationDbContext context;

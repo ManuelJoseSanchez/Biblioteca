@@ -2,12 +2,14 @@ using AutoMapper;
 using BibliotecaAPI.Datos;
 using BibliotecaAPI.DTOs;
 using BibliotecaAPI.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 namespace BibliotecaAPI.Controllers
 {
     [ApiController]
     [Route("api/autores_coleccion")]
+    [Authorize]
     public class AutoresColeccionController : ControllerBase
     {
         private readonly ApplicationDbContext context;
@@ -19,13 +21,13 @@ namespace BibliotecaAPI.Controllers
             this.mapper = mapper;
         }
 
-        [HttpGet("{ids}",Name ="ObternerAutoresPorIds")]
+        [HttpGet("{ids}", Name = "ObternerAutoresPorIds")]
         public async Task<ActionResult<List<AutorConLibrosDTO>>> Get(string ids)
         {
-            var idsColeccion =  new List<int>();
+            var idsColeccion = new List<int>();
             foreach (var id in ids.Split(","))
             {
-                if(int.TryParse(id, out int idInt))
+                if (int.TryParse(id, out int idInt))
                 {
                     idsColeccion.Add(idInt);
                 }
@@ -37,11 +39,11 @@ namespace BibliotecaAPI.Controllers
                 return ValidationProblem();
             }
 
-            var autores =  await this.context.Autores.Include(x => x.Libros)
+            var autores = await this.context.Autores.Include(x => x.Libros)
                             .ThenInclude(x => x.Libro)
                             .Where(x => idsColeccion.Contains(x.Id))
                             .ToListAsync();
-            if(autores.Count != idsColeccion.Count)
+            if (autores.Count != idsColeccion.Count)
             {
                 return NotFound();
             }
@@ -60,7 +62,7 @@ namespace BibliotecaAPI.Controllers
             var autoresDTO = this.mapper.Map<IEnumerable<AutorDTO>>(autores);
             var ids = autores.Select(x => x.Id);
             var idsString = string.Join(",", ids);
-            return CreatedAtRoute("ObternerAutoresPorIds", new {ids= idsString},  autoresDTO);
+            return CreatedAtRoute("ObternerAutoresPorIds", new { ids = idsString }, autoresDTO);
         }
     }
 }
