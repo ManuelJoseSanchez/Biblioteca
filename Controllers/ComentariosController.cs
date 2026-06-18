@@ -2,6 +2,7 @@ using AutoMapper;
 using Biblioteca.DTOs;
 using Biblioteca.Entidades;
 using BibliotecaAPI.Datos;
+using BibliotecaAPI.Servicios;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -17,23 +18,27 @@ namespace Biblioteca.Controllers
     {
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly IServiciosUsuarios serviciosUsuarios;
 
-        public ComentariosController(ApplicationDbContext context, IMapper mapper)
+        public ComentariosController(ApplicationDbContext context, IMapper mapper, IServiciosUsuarios serviciosUsuarios)
         {
             this.context = context;
             this.mapper = mapper;
+            this.serviciosUsuarios = serviciosUsuarios;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<ComentarioDTO>>> Get(int libroId)
+        public async Task<ActionResult<List<ComentarioDTO>>> Get(int librosId)
         {
-            var isBook = await this.context.Libros.AnyAsync(x => x.Id == libroId);
+            var isBook = await this.context.Libros.AnyAsync(x => x.Id == librosId);
             if (!isBook)
             {
                 return NotFound();
             }
 
-            var comentarios = await this.context.Comentarios.Where(x => x.LibroId == libroId)
+            var comentarios = await this.context.Comentarios
+            .Include(x => x.Usuario)
+            .Where(x => x.LibroId == librosId)
             .OrderByDescending(x => x.FechaPublicacion)
             .ToListAsync();
             return this.mapper.Map<List<ComentarioDTO>>(comentarios);
@@ -42,7 +47,9 @@ namespace Biblioteca.Controllers
         [HttpGet("{id}", Name = "ObetenerComentario")]
         public async Task<ActionResult<ComentarioDTO>> Get(Guid id)
         {
-            var comentario = await this.context.Comentarios.FirstOrDefaultAsync(x => x.Id == id);
+            var comentario = await this.context.Comentarios
+            .Include(x => x.Usuario)
+            .FirstOrDefaultAsync(x => x.Id == id);
             if (comentario is null)
             {
                 return NotFound();
@@ -51,42 +58,59 @@ namespace Biblioteca.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post(int libroId, ComentarioCreacionDTO comentarioCreacionDTO)
+        public async Task<ActionResult> Post(int librosId, ComentarioCreacionDTO comentarioCreacionDTO)
         {
-            var isBook = await this.context.Libros.AnyAsync(x => x.Id == libroId);
+            Console.WriteLine(librosId);
+            var isBook = await this.context.Libros.AnyAsync(x => x.Id == librosId);
             if (!isBook)
             {
                 return NotFound();
             }
+            var usuario = await this.serviciosUsuarios.ObtenerUsuario();
+            if(usuario is null)
+            {
+                return NotFound();
+            }
             var comentario = this.mapper.Map<Comentario>(comentarioCreacionDTO);
-            comentario.LibroId = libroId;
+            comentario.LibroId = librosId;
             comentario.FechaPublicacion = DateTime.UtcNow;
+            comentario.UsuarioId=usuario.Id;
             this.context.Add(comentario);
             await this.context.SaveChangesAsync();
 
             var ComentarioDTO = this.mapper.Map<ComentarioDTO>(comentario);
 
             return CreatedAtRoute("ObetenerComentario",
-             new { id = comentario.Id, libroId },
-             comentario);
+             new { id = comentario.Id, librosId },
+             ComentarioDTO);
         }
 
         [HttpPatch("{id}")]
-        public async Task<ActionResult> Patch(Guid id, int libroId, JsonPatchDocument<ComentarioPatchDTO> comentarioPatchDTO)
+        public async Task<ActionResult> Patch(Guid id, int librosId, JsonPatchDocument<ComentarioPatchDTO> comentarioPatchDTO)
         {
             if (comentarioPatchDTO is null)
             {
                 return BadRequest();
             }
-            var isBook = await this.ExisteLibro(libroId);
+            var isBook = await this.ExisteLibro(librosId);
             if (!isBook)
             {
                 return NotFound();
             }
+            var usuario = await this.serviciosUsuarios.ObtenerUsuario();
+            if(usuario is null)
+            {
+                return NotFound();
+            }
+
             var CometarioDB = await this.context.Comentarios.FirstOrDefaultAsync(x => x.Id == id);
             if (CometarioDB is null)
             {
                 return NotFound();
+            }
+            if(CometarioDB.UsuarioId != usuario.Id)
+            {
+                return Forbid();
             }
             var comentariosPatch = this.mapper.Map<ComentarioPatchDTO>(CometarioDB);
             comentarioPatchDTO.ApplyTo(comentariosPatch, ModelState);
@@ -102,20 +126,31 @@ namespace Biblioteca.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(Guid id, int libroId)
+        public async Task<ActionResult> Delete(Guid id, int librosId)
         {
-            var isBook = await this.ExisteLibro(libroId);
+            var isBook = await this.ExisteLibro(librosId);
             if (!isBook)
             {
                 return NotFound();
             }
-
-            var registrosBorrados = await this.context.Comentarios.Where(y => y.Id == id).ExecuteDeleteAsync();
-            if (registrosBorrados == 0)
+            var usuario = await serviciosUsuarios.ObtenerUsuario();
+            if(usuario is null)
             {
                 return NotFound();
             }
 
+            var comentarioDB = await this.context.Comentarios.FirstOrDefaultAsync(x => x.Id == id);
+            if(comentarioDB is null)
+            {
+                return NotFound();
+            }
+
+            if(comentarioDB.UsuarioId != usuario.Id)
+            {
+                return Forbid();
+            }
+            this.context.Remove(comentarioDB);
+            await this.context.SaveChangesAsync();
             return NoContent();
         }
 
