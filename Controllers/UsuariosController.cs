@@ -12,7 +12,6 @@ namespace Biblioteca.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class UsuariosController : ControllerBase
     {
         private readonly UserManager<IdentityUser> userManager;
@@ -20,7 +19,7 @@ namespace Biblioteca.Controllers
         private readonly SignInManager<IdentityUser> signInManager;
         private readonly IServiciosUsuarios serviciosUsuarios;
 
-        public UsuariosController(UserManager<IdentityUser> userManager, IConfiguration configuration, 
+        public UsuariosController(UserManager<IdentityUser> userManager, IConfiguration configuration,
         SignInManager<IdentityUser> signInManager, IServiciosUsuarios serviciosUsuarios)
         {
             this.userManager = userManager;
@@ -30,7 +29,6 @@ namespace Biblioteca.Controllers
         }
 
         [HttpPost("registro")]
-        [AllowAnonymous]
         public async Task<ActionResult<RespuestaAutenticacionDTO>> Registro(CredencialesUsuarioDTO credencialesUsuarioDTO)
         {
             var usuario = new IdentityUser
@@ -50,24 +48,23 @@ namespace Biblioteca.Controllers
             {
                 foreach (var error in resultado.Errors)
                 {
-                    ModelState.AddModelError(string.Empty,error.Description);
+                    ModelState.AddModelError(string.Empty, error.Description);
                 }
                 return ValidationProblem();
             }
         }
 
         [HttpPost("login")]
-        [AllowAnonymous]
         public async Task<ActionResult<RespuestaAutenticacionDTO>> Login(CredencialesUsuarioDTO credencialesUsuarioDTO)
         {
             var usuario = await this.userManager.FindByEmailAsync(credencialesUsuarioDTO.Email);
 
-            if(usuario is null)
+            if (usuario is null)
             {
                 return this.RetornarLoginIncorrecto();
             }
 
-            var resultado = await this.signInManager.CheckPasswordSignInAsync(usuario,credencialesUsuarioDTO.Password!, lockoutOnFailure: false);
+            var resultado = await this.signInManager.CheckPasswordSignInAsync(usuario, credencialesUsuarioDTO.Password!, lockoutOnFailure: false);
 
             if (resultado.Succeeded)
             {
@@ -81,17 +78,44 @@ namespace Biblioteca.Controllers
         }
 
         [HttpGet("renovar-token")]
+        [Authorize]
         public async Task<ActionResult<RespuestaAutenticacionDTO>> RenovarToken()
         {
             var usuario = await this.serviciosUsuarios.ObtenerUsuario();
-            if(usuario is null)
+            if (usuario is null)
             {
                 return NotFound();
             }
 
             var credencialesUsuarioDto = new CredencialesUsuarioDTO { Email = usuario.Email! };
-            var respuestaAutenticacion =  await this.ConstruirToken(credencialesUsuarioDto);
+            var respuestaAutenticacion = await this.ConstruirToken(credencialesUsuarioDto);
             return respuestaAutenticacion;
+        }
+
+        [HttpPost("hacer-admin")]
+        [Authorize(Policy = "esadmin")]
+        public async Task<ActionResult> HecerAdmin(EditarClaimDTO editarClaimDTO)
+        {
+            var usuario = await this.userManager.FindByEmailAsync(editarClaimDTO.Email);
+            if (usuario is null)
+            {
+                return NotFound();
+            }
+            await this.userManager.AddClaimAsync(usuario, new Claim("esadmin", "true"));
+            return NoContent();
+        }
+
+        [HttpPost("remover-admin")]
+        [Authorize(Policy = "esadmin")]
+        public async Task<ActionResult> RemoverAdmin(EditarClaimDTO editarClaimDTO)
+        {
+            var usuario = await this.userManager.FindByEmailAsync(editarClaimDTO.Email);
+            if (usuario is null)
+            {
+                return NotFound();
+            }
+            await this.userManager.RemoveClaimAsync(usuario, new Claim("esadmin", "true"));
+            return NoContent();
         }
 
         private ActionResult RetornarLoginIncorrecto()
@@ -100,9 +124,9 @@ namespace Biblioteca.Controllers
             return ValidationProblem();
         }
 
-        private async Task<RespuestaAutenticacionDTO> ConstruirToken( CredencialesUsuarioDTO credencialesUsuarioDTO)
+        private async Task<RespuestaAutenticacionDTO> ConstruirToken(CredencialesUsuarioDTO credencialesUsuarioDTO)
         {
-            var claims =  new List<Claim>
+            var claims = new List<Claim>
             {
                 new Claim("email", credencialesUsuarioDTO.Email),
                 new Claim("lo que yo quiera","cualquier valor")
@@ -114,18 +138,18 @@ namespace Biblioteca.Controllers
             claims.AddRange(claimsDB);
 
             var llave = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this.configuration["llavejwt"]!));
-            var credenciales =  new SigningCredentials(llave,SecurityAlgorithms.HmacSha256);
+            var credenciales = new SigningCredentials(llave, SecurityAlgorithms.HmacSha256);
 
-            var expiracion =  DateTime.UtcNow.AddDays(1);
+            var expiracion = DateTime.UtcNow.AddDays(1);
 
-            var tokenDeSeguridad= new JwtSecurityToken(issuer: null, audience: null, claims:claims, expires: expiracion, signingCredentials:credenciales);
+            var tokenDeSeguridad = new JwtSecurityToken(issuer: null, audience: null, claims: claims, expires: expiracion, signingCredentials: credenciales);
 
             var token = new JwtSecurityTokenHandler().WriteToken(tokenDeSeguridad);
 
             return new RespuestaAutenticacionDTO
             {
-                Token= token,
-                Expiracion=expiracion
+                Token = token,
+                Expiracion = expiracion
             };
         }
 

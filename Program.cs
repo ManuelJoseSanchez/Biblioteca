@@ -19,7 +19,7 @@ builder.Services.AddIdentityCore<IdentityUser>()
                 .AddDefaultTokenProviders();
 builder.Services.AddScoped<UserManager<IdentityUser>>();
 builder.Services.AddScoped<SignInManager<IdentityUser>>();
-builder.Services.AddTransient<IServiciosUsuarios,ServiciosUsuarios>();
+builder.Services.AddTransient<IServiciosUsuarios, ServiciosUsuarios>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -37,6 +37,10 @@ builder.Services.AddAuthentication().AddJwtBearer(optiones =>
         ClockSkew = TimeSpan.Zero
 
     };
+});
+builder.Services.AddAuthorization(opciones =>
+{
+    opciones.AddPolicy("esadmin", politica => politica.RequireClaim("esadmin"));
 });
 
 var app = builder.Build();
