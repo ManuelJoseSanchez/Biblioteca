@@ -1,19 +1,20 @@
+using BibliotecaAPI.Entidades;
 using Microsoft.AspNetCore.Identity;
 
 namespace BibliotecaAPI.Servicios
 {
     public class ServiciosUsuarios : IServiciosUsuarios
     {
-        private readonly UserManager<IdentityUser> userManager;
+        private readonly UserManager<Usuario> userManager;
         private readonly IHttpContextAccessor httpContextAccessor;
 
-        public ServiciosUsuarios(UserManager<IdentityUser> userManager, IHttpContextAccessor httpContextAccessor)
+        public ServiciosUsuarios(UserManager<Usuario> userManager, IHttpContextAccessor httpContextAccessor)
         {
             this.userManager = userManager;
             this.httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IdentityUser?> ObtenerUsuario()
+        public async Task<Usuario?> ObtenerUsuario()
         {
             var emailClaim = this.httpContextAccessor.HttpContext!
                             .User.Claims.Where(x => x.Type == "email").FirstOrDefault();
