@@ -3,6 +3,7 @@ using BibliotecaAPI.Datos;
 using BibliotecaAPI.DTOs;
 using BibliotecaAPI.Entidades;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,11 +16,44 @@ namespace BibliotecaAPI.Controllers
     {
         private readonly ApplicationDbContext Context;
         public readonly IMapper mapper;
-        public LibroController(ApplicationDbContext Context, IMapper mapper)
+        private readonly ITimeLimitedDataProtector protectionProviderTiempo;
+
+        public LibroController(ApplicationDbContext Context, IMapper mapper, IDataProtectionProvider protectionProvider)
         {
             this.Context = Context;
             this.mapper = mapper;
+            protectionProviderTiempo = protectionProvider
+                                        .CreateProtector("LibroController")
+                                        .ToTimeLimitedDataProtector();
         }
+
+        [HttpGet("listado/obtener-token")]
+        public ActionResult ObtenerTokenListado()
+        {
+            var textoplano = Guid.NewGuid().ToString();
+            var token = protectionProviderTiempo.Protect(textoplano, lifetime: TimeSpan.FromSeconds(30));
+            var url = Url.RouteUrl("ObtenerListadoLibrosUsandoToken", new {token}, "http");
+            return Ok(new { url });
+        }
+
+        [HttpGet("listado/{token}", Name = "ObtenerListadoLibrosUsandoToken")]
+        [AllowAnonymous]
+        public async Task<ActionResult> ObtenerListadoLibrosUsandoToken(string token)
+        {
+            try
+            {
+                protectionProviderTiempo.Unprotect(token);
+            }
+            catch
+            {
+                ModelState.AddModelError(nameof(token),"El token ha expirado");
+                return ValidationProblem();
+            }
+            var libros = await this.Context.Libros.ToListAsync();
+            var librosDTO = this.mapper.Map<IEnumerable<LibroDTO>>(libros);
+            return Ok(librosDTO);
+        }
+
 
         [HttpGet]
         public async Task<IEnumerable<LibroDTO>> Get()
