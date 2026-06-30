@@ -30,6 +30,7 @@ namespace BibliotecaAPI.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IEnumerable<AutorDTO>> Get()
         {
             this.logger.LogInformation("Obtenido los datos de autores");

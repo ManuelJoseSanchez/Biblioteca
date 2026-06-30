@@ -9,7 +9,15 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 //area de servicio
-
+var origenesPermitidos = builder.Configuration.GetSection("origenesPermitidos").Get<string[]>()!;
+builder.Services.AddCors(opciones =>
+{
+    opciones.AddDefaultPolicy(opcionesCORS =>
+    {
+        opcionesCORS.WithOrigins(origenesPermitidos).AllowAnyMethod().AllowAnyHeader()
+        .WithExposedHeaders("mi-cabecera");
+    });
+});
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddAutoMapper(cfg => { }, typeof(Program));
@@ -48,6 +56,12 @@ var app = builder.Build();
 
 // area de middlewares
 
+app.Use( async (contexto , next) =>
+{
+    contexto.Response.Headers.Append("mi-cabecera", "valor");
+    await next();
+});
+app.UseCors();
 app.UseLogueaPeticion();
 app.UseBloqueoPeticion();
 
