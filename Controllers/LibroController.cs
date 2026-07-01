@@ -28,6 +28,7 @@ namespace BibliotecaAPI.Controllers
         }
 
         [HttpGet("listado/obtener-token")]
+        [AllowAnonymous]
         public ActionResult ObtenerTokenListado()
         {
             var textoplano = Guid.NewGuid().ToString();
@@ -56,6 +57,7 @@ namespace BibliotecaAPI.Controllers
 
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IEnumerable<LibroDTO>> Get()
         {
             var libros = await this.Context.Libros.ToListAsync();
@@ -64,6 +66,7 @@ namespace BibliotecaAPI.Controllers
         }
 
         [HttpGet("{id:int}", Name = "ObtenerLibro")]
+        [AllowAnonymous]
         public async Task<ActionResult<LibroConAutorDTO>> Get(int id)
         {
             var libro = await this.Context.Libros

@@ -57,6 +57,7 @@ namespace BibliotecaAPI.Controllers
          * obtener datos del url de la petición
          * [FromRoute] string valorCuerpo
         */
+        [AllowAnonymous]
         public async Task<ActionResult<AutorConLibrosDTO>> Get([FromRoute] int id)
         {
             var autor = await this.context.Autores.Include(x => x.Libros)

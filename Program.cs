@@ -55,10 +55,12 @@ builder.Services.AddAuthorization(opciones =>
     opciones.AddPolicy("esadmin", politica => politica.RequireClaim("esadmin"));
 });
 
+builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // area de middlewares
-
+app.UseSwagger();
+app.UseSwaggerUI();
 app.Use( async (contexto , next) =>
 {
     contexto.Response.Headers.Append("mi-cabecera", "valor");
