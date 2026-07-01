@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using BibliotecaAPI.Servicios;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,11 +10,20 @@ namespace BibliotecaAPI.Controllers
     {
         private readonly IDataProtector protection;
         private readonly ITimeLimitedDataProtector protectionLimitadoPorTiempo;
+        private readonly IServicioHash servicioHash;
 
-        public SeguridadController(IDataProtectionProvider protectionProvider)
+        public SeguridadController(IDataProtectionProvider protectionProvider, IServicioHash servicioHash)
         {
             this.protection = protectionProvider.CreateProtector("SeguridadController");
             this.protectionLimitadoPorTiempo =  this.protection.ToTimeLimitedDataProtector();
+            this.servicioHash = servicioHash;
+        }
+
+        [HttpGet("hash")]
+        public ActionResult Hash(string textoPlano)
+        {
+            var resultado = this.servicioHash.Hash(textoPlano);
+            return Ok(new { resultado });
         }
 
         [HttpGet("encriptar")]
